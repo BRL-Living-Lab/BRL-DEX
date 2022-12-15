@@ -53,7 +53,7 @@ const createFRE = async () => {
   }
 
   // Create data NFT and a datatoken with Fixed Rate exchange
-  const result = await Factory.createNftErc20WithFixedRate(
+  const result = await Factory.createNftWithDatatokenWithFixedRate(
     publisherAccount,
     nftParams,
     erc20Params,
@@ -65,7 +65,7 @@ const createFRE = async () => {
   const datatokenAddress = result.events.TokenCreated.returnValues[0];
 
   return {
-    erc721Address,
+    erc721Address, //data nft address
     datatokenAddress
   };
 };

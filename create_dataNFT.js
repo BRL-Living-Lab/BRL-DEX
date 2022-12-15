@@ -16,15 +16,14 @@ const createDataNFT = async () => {
   const accounts = await web3.eth.getAccounts();
   const publisherAccount = accounts[0];
 
-  console.log(publisherAccount);
+  console.log(`publisher account : ${publisherAccount}`);
 
   // Define dataNFT parameters
   const nftParams = {
-    name: '72120Bundle',
-    symbol: '72Bundle',
-    // Optional parameters
+    name: 'Data Asset 1',
+    symbol: 'BRLData',
     templateIndex: 1,
-    tokenURI: 'https://example123123.com',
+    tokenURI: 'https://jsonkeeper.com/b/W72H',
     transferable: true,
     owner: publisherAccount
   };
@@ -34,6 +33,11 @@ const createDataNFT = async () => {
     publisherAccount,
     nftParams
   );
+
+  const numOfToken = await Factory.getCurrentTokenCount();
+  const numOfNFTToken = await Factory.getCurrentNFTCount();
+  console.log( `number of token count from this factory: ${numOfToken}`)
+  console.log( `number of NFT token: ${numOfNFTToken}`)
 
   return {
     erc721Address
