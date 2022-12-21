@@ -1,4 +1,6 @@
-const { NftFactory } = require('@oceanprotocol/lib');
+// Publish a dataset - NFT + Datatoken
+
+const { NftFactory, ZERO_ADDRESS } = require('@oceanprotocol/lib');
 const Web3 = require('web3');
 
 const { web3Provider, oceanConfig } = require('./config');
@@ -32,10 +34,10 @@ const createDataNFTwithDatatoken = async () => {
         cap: '4',
         feeAmount: '0',
         // paymentCollector is the address
-        paymentCollector: '0x0000000000000000000000000000000000000000',
-        feeToken: '0x0000000000000000000000000000000000000000',
+        paymentCollector: ZERO_ADDRESS,
+        feeToken: ZERO_ADDRESS,
         minter: publisherAccount,
-        mpFeeAddress: '0x0000000000000000000000000000000000000000'
+        mpFeeAddress: ZERO_ADDRESS
       };
   
     // Call a Factory.createNFT(...) which will create a new dataNFT
@@ -50,19 +52,19 @@ const createDataNFTwithDatatoken = async () => {
     console.log( `number of token count from this factory: ${numOfToken}`)
     console.log( `number of NFT token: ${numOfNFTToken}`)
 
-    const erc721Address = result.events.NFTCreated.returnValues[0];
+    const nftAddress = result.events.NFTCreated.returnValues[0];
     const datatokenAddress = result.events.TokenCreated.returnValues[0];
   
     return {
-      erc721Address,
+      nftAddress,
       datatokenAddress
     };
   };
 
   // Call the createFRE() function 
 createDataNFTwithDatatoken()
-.then(({ erc721Address, datatokenAddress }) => {
-  console.log(`DataNft address ${erc721Address}`);
+.then(({ nftAddress, datatokenAddress }) => {
+  console.log(`DataNft address ${nftAddress}`);
   console.log(`Datatoken address ${datatokenAddress}`);
   process.exit(1);
 
