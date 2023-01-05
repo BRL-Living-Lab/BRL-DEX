@@ -1,6 +1,6 @@
 // Publish a dataset - NFT + Datatoken
 
-const { NftFactory, calculateEstimatedGas, sendTx, ZERO_ADDRESS, ProviderInstance, Datatoken, getHash, Nft, Aquarius, generateDid } = require("@oceanprotocol/lib");
+const {downloadFile,  NftFactory, calculateEstimatedGas, sendTx, ZERO_ADDRESS, ProviderInstance, Datatoken, getHash, Nft, Aquarius, generateDid } = require("@oceanprotocol/lib");
 const Web3 = require("web3");
 const { SHA256 } = require('crypto-js');
 const { AbiItem } = require('web3-utils');
@@ -235,7 +235,7 @@ const createDataNFTwithDatatoken = async () => {
   );
 
   
-  // await downloadFile(downloadURL);
+  const x = await downloadFile(downloadURL);
   
 
   return {
