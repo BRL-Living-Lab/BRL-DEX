@@ -1,8 +1,9 @@
 // Publish a dataset - NFT + Datatoken
 
-const { NftFactory, ZERO_ADDRESS, ProviderInstance, Datatoken, getHash, Nft, Aquarius, generateDid } = require("@oceanprotocol/lib");
+const { NftFactory, calculateEstimatedGas, sendTx, ZERO_ADDRESS, ProviderInstance, Datatoken, getHash, Nft, Aquarius, generateDid } = require("@oceanprotocol/lib");
 const Web3 = require("web3");
 const { SHA256 } = require('crypto-js');
+const { AbiItem } = require('web3-utils');
 
 const { web3Provider, oceanConfig } = require("./config");
 
@@ -15,9 +16,46 @@ const createDataNFTwithDatatoken = async () => {
   const Factory = new NftFactory(oceanConfig.erc721FactoryAddress, web3);
   const aquarius = new Aquarius(aquariusUrl);
 
+  
+
   const accounts = await web3.eth.getAccounts();
   const publisherAccount = accounts[0];
-  const consumerAccount = '0xe08A1dAe983BC701D05E492DB80e0144f8f4b909';
+  const consumerAccount = accounts[1];
+
+
+
+
+  const minAbi = [
+    {
+      constant: false,
+      inputs: [
+        { name: 'to', type: 'address' },
+        { name: 'value', type: 'uint256' }
+      ],
+      name: 'mint',
+      outputs: [{ name: '', type: 'bool' }],
+      payable: false,
+      stateMutability: 'nonpayable',
+      type: 'function'
+    }
+  ]
+  const tokenContract = new web3.eth.Contract(minAbi, oceanConfig.oceanTokenAddress)
+  const estGas = await calculateEstimatedGas(
+    publisherAccount,
+    tokenContract.methods.mint,
+    publisherAccount,
+    web3.utils.toWei('1000')
+  )
+  await sendTx(
+    publisherAccount,
+    estGas,
+    web3,
+    1,
+    tokenContract.methods.mint,
+    publisherAccount,
+    web3.utils.toWei('1000')
+  )
+
   
   
 
@@ -110,14 +148,10 @@ const createDataNFTwithDatatoken = async () => {
   ddo.services[0].datatokenAddress = datatokenAddress;
   // update ddo and set the right did
   ddo.nftAddress = nftAddress;
-  const chain = await web3.eth.getChainId();
-  // ddo.id =
-  //   "did:op:" +
-  //   SHA256(web3.utils.toChecksumAddress(nftAddress) + chain.toString(10));
 
-  ddo.id = generateDid(nftAddress, chain);
+  ddo.id = generateDid(nftAddress, oceanConfig.chainId);
 
-  providerResponse = await ProviderInstance.encrypt(ddo, providerUrl);
+  providerResponse = await ProviderInstance.encrypt(ddo, oceanConfig.providerUri);
   const encryptedResponse = await providerResponse;
   const metadataHash = getHash(JSON.stringify(ddo));
 
@@ -125,7 +159,7 @@ const createDataNFTwithDatatoken = async () => {
     nftAddress,
     publisherAccount,
     0,
-    providerUrl,
+    "http://172.15.0.4:8030",
     "",
     "0x2",
     encryptedResponse,
@@ -133,10 +167,10 @@ const createDataNFTwithDatatoken = async () => {
   );
 
   const resolvedDDO = await aquarius.waitForAqua(ddo.id);
-//   assert(resolvedDDO, "Cannot fetch DDO from Aquarius");
+  console.log(resolvedDDO);
 
 
-  // mint 1 Datatoken and send it to the consumer
+  
 
   // Get current datatoken balance of receiver
   let receiverBalance = await datatoken.balance(
@@ -145,6 +179,7 @@ const createDataNFTwithDatatoken = async () => {
   );
   console.log(`Receiver balance before mint for data nft ${datatokenAddress}: ${receiverBalance}`);
 
+  // mint 1 Datatoken and send it to the consumer
   await datatoken.mint(
     datatokenAddress,
     publisherAccount,
@@ -199,23 +234,23 @@ const createDataNFTwithDatatoken = async () => {
     web3
   );
 
-  try {
-    await downloadFile(downloadURL);
-  } catch (e) {
-    assert.fail("Download failed");
-  }
+  
+  // await downloadFile(downloadURL);
+  
 
   return {
     nftAddress,
     datatokenAddress,
+    downloadURL
   };
 };
 
 // Call the createFRE() function
 createDataNFTwithDatatoken()
-  .then(({ nftAddress, datatokenAddress }) => {
+  .then(({ nftAddress, datatokenAddress, downloadURL }) => {
     console.log(`DataNft address ${nftAddress}`);
     console.log(`Datatoken address ${datatokenAddress}`);
+    console.log(`Download URL ${downloadURL}`)
     process.exit(1);
   })
   .catch((err) => {
