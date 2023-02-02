@@ -19,7 +19,7 @@ const {
   const providerUrl = oceanConfig.providerUri;
   
   // replace the datanft address here
-  const dataNftAddress = '0xFa3E4b9d88B9005FDd78fC14b1f45bb280d6D66e'
+  const dataNftAddress = '0x1133eC73a537f5dA8092F72b3056d1c7bE680add'
 
   const did = generateDid(dataNftAddress, oceanConfig.chainId);
   console.log(did);
@@ -28,14 +28,24 @@ const {
   const setMetadata = async (did) => {
     const accounts = await web3.eth.getAccounts();
     const publisherAccount = accounts[0];
+    const consumerAccount = accounts[1];
     
     // Fetch ddo from Aquarius
     const ddo = await aquarius.resolve(did);
   
     // update the ddo here
-    ddo.metadata.name = "Dataset updation name v2";
-    ddo.metadata.description = "Description updating v2";
-    ddo.metadata.tags = ["new tag1", "new tag2"];
+    ddo.metadata.name = "Dataset updation Deny";
+    ddo.metadata.description = "Adding Consumer name in Deny";
+
+    ddo.credentials = {
+        
+      deny: [
+        {
+          type: "address",
+          values: [consumerAccount]
+        }
+      ]
+    }
   
     providerResponse = await ProviderInstance.encrypt(ddo, providerUrl);
     const encryptedResponse = await providerResponse;
@@ -53,8 +63,6 @@ const {
       `0x${metadataHash}`
     );
     console.log(res);
-
-    const s = nft.getNftPermissions('0x3C3F437B3338ab71887c1CEBe240B44e5a4f806f', publisherAccount);
   
     // Check if ddo is correctly udpated in Aquarius 
     const resolvedDDO =  await aquarius.waitForAqua(ddo.id);

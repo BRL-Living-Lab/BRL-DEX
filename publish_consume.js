@@ -96,6 +96,22 @@ const createDataNFTwithDatatoken = async () => {
         timeout: 0,
       },
     ],
+
+    // credentials: {
+    //   allow: [
+    //     {
+    //       type: "address",
+    //       values: [consumerAccount]
+    //     }
+    //   ],
+    //   // deny: [
+    //   //   {
+    //   //     type: "address",
+    //   //     values: []
+    //   //   }
+    //   // ]
+    // }
+
   };
 
   // Define dataNFT parameters
@@ -183,7 +199,7 @@ const createDataNFTwithDatatoken = async () => {
   await datatoken.mint(
     datatokenAddress,
     publisherAccount,
-    "1",
+    "4",
     consumerAccount
   );
 
