@@ -149,7 +149,7 @@ const createAsset = async (name, symbol, owner, assetUrl, ddo, providerUrl) => {
 
     // console.log(web3.eth.abi.decodeLog);
 
-    // console.log(result.events[0]);
+    // console.dir(result, { depth: null });
 
     const nftAddress = result.events.NFTCreated.returnValues[0];
     const datatokenAddressAsset = result.events.TokenCreated.returnValues[0];
@@ -212,6 +212,7 @@ const run = async () => {
     publisherAccount = accounts[0];
     consumerAccount = accounts[1];
 
+    console.log("Accounts:");
     console.log({ publisherAccount, consumerAccount });
     console.log({ oceanConfig });
 
@@ -255,49 +256,89 @@ const run = async () => {
 
     // await transfer(web3, oceanConfig, publisherAccount, oceanConfig.oceanTokenAddress, consumerAccount, "100");
 
-    datasetId = await createAsset(
-        "D1Min",
-        "D1M",
-        publisherAccount,
-        DATASET_ASSET_URL,
-        DATASET_DDO,
-        oceanConfig.providerUri
-    );
+    console.log("Creating Data NFT and Token:");
 
-    console.log(`dataset id: ${datasetId}`);
+    let datasetId;
+    try {
+        datasetId = await createAsset(
+            "D1Min",
+            "D1M",
+            publisherAccount,
+            DATASET_ASSET_URL,
+            DATASET_DDO,
+            oceanConfig.providerUri
+        );
+    } catch (error) {
+        console.dir(error, { depth: null });
+    }
 
+    console.log(`Data NFT did: ${datasetId}`);
+
+    console.log("Creating Algorithm NFT and Token:");
     algorithmId = await createAsset(
         "D1Min",
         "D1M",
-        publisherAccount,
+        consumerAccount,
         ALGORITHM_ASSET_URL,
         ALGORITHM_DDO,
         oceanConfig.providerUri
     );
 
-    console.log(`algorithm id: ${algorithmId}`);
+    console.log(`Algorithm NFT did: ${algorithmId}`);
 
     console.log(ALGORITHM_DDO, DATASET_DDO);
     resolvedDatasetDdo = await aquarius.waitForAqua(datasetId);
     resolvedAlgorithmDdo = await aquarius.waitForAqua(algorithmId);
 
+    console.log("DDOs resolved");
+
     console.log({ resolvedDatasetDdo });
     console.log({ resolvedAlgorithmDdo });
 
+    console.log("Minting Data tokens");
     const txr1 = await datatoken.mint(
         resolvedDatasetDdo.services[0].datatokenAddress,
         publisherAccount,
         "10",
         consumerAccount
     );
+    console.log("Minted Data tokens");
     console.log({ txr1 });
+
+    console.log("Minting Data tokens");
     const txr2 = await datatoken.mint(
-        resolvedAlgorithmDdo.services[0].datatokenAddress,
+        resolvedDatasetDdo.services[0].datatokenAddress,
         publisherAccount,
+        "10",
+        publisherAccount
+    );
+    console.log("Minted Data tokens");
+    console.log({ txr2 });
+
+    console.log("Minting Algorithm tokens");
+    const txr3 = await datatoken.mint(
+        resolvedAlgorithmDdo.services[0].datatokenAddress,
+        consumerAccount,
         "10",
         consumerAccount
     );
-    console.log({ txr2 });
+    console.log("Minted Algorithm tokens");
+    console.log({ txr3 });
+
+    const txr4 = await datatoken.mint(
+        resolvedAlgorithmDdo.services[0].datatokenAddress,
+        consumerAccount,
+        "10",
+        publisherAccount
+    );
+    console.log("Minted Algorithm tokens");
+    console.log({ txr4 });
+
+    console.log([resolvedDatasetDdo.datatokens]);
+    console.log(resolvedAlgorithmDdo.datatokens);
+
+    const consumerTokenBalance = await datatoken.balance(resolvedDatasetDdo.datatokens[0].address, consumerAccount);
+    console.log(consumerTokenBalance);
 
     console.log("Compute Environments:", oceanConfig.providerUri);
     computeEnvs = await ProviderInstance.getComputeEnvironments(oceanConfig.providerUri);
@@ -305,6 +346,9 @@ const run = async () => {
 
     const computeEnv = computeEnvs.find((ce) => ce.priceMin === 0);
     console.log("Free compute environment = ", computeEnv);
+
+    const paidComputeEnv = computeEnvs.find((ce) => ce.priceMin != 0);
+    console.log("Paid compute environment = ", paidComputeEnv);
 
     const mytime = new Date();
     const computeMinutes = 5;
@@ -322,6 +366,24 @@ const run = async () => {
         documentId: resolvedAlgorithmDdo.id,
         serviceId: resolvedAlgorithmDdo.services[0].id,
     };
+    // const txr3 = await datatoken.transfer(
+    //     resolvedDatasetDdo.datatokens[0].address,
+    //     paidComputeEnv.consumerAddress,
+    //     "1",
+    //     consumerAccount
+    // );
+    // console.log({ txr3 });
+
+    // const consumerTokenBalancePostTransfer = await datatoken.balance(
+    //     resolvedDatasetDdo.datatokens[0].address,
+    //     consumerAccount
+    // );
+    // console.log({ consumerTokenBalancePostTransfer });
+    // const providerTokenBalance = await datatoken.balance(
+    //     resolvedDatasetDdo.datatokens[0].address,
+    //     paidComputeEnv.consumerAddress
+    // );
+    // console.log({ providerTokenBalance });
 
     const providerInitializeComputeResults = await ProviderInstance.initializeCompute(
         assets,
@@ -332,7 +394,15 @@ const run = async () => {
         consumerAccount
     );
 
+    console.dir(resolvedDatasetDdo, { depth: null });
+    console.dir(resolvedAlgorithmDdo, { depth: null });
+
     console.log({ providerInitializeComputeResults });
+
+    console.log(await datatoken.balance(resolvedDatasetDdo.datatokens[0].address, consumerAccount));
+    console.log(await datatoken.balance(resolvedAlgorithmDdo.datatokens[0].address, consumerAccount));
+    console.log(await datatoken.balance(resolvedDatasetDdo.datatokens[0].address, publisherAccount));
+    console.log(await datatoken.balance(resolvedAlgorithmDdo.datatokens[0].address, publisherAccount));
 
     algo.transferTxId = await handleOrder(
         providerInitializeComputeResults.algorithm,
@@ -400,6 +470,11 @@ const run = async () => {
     );
 
     console.log(`Compute results URL: ${downloadURL}`);
+
+    console.log(await datatoken.balance(resolvedDatasetDdo.datatokens[0].address, consumerAccount));
+    console.log(await datatoken.balance(resolvedAlgorithmDdo.datatokens[0].address, consumerAccount));
+    console.log(await datatoken.balance(resolvedDatasetDdo.datatokens[0].address, publisherAccount));
+    console.log(await datatoken.balance(resolvedAlgorithmDdo.datatokens[0].address, publisherAccount));
     /*
      */
 };
