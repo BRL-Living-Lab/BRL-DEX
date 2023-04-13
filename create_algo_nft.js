@@ -29,7 +29,9 @@ const DATASET_ASSET_URL = {
     files: [
         {
             type: "url",
-            url: "https://raw.githubusercontent.com/oceanprotocol/testdatasets/main/shs_dataset_test.txt",
+            // url: "https://raw.githubusercontent.com/oceanprotocol/testdatasets/main/shs_dataset_test.txt",
+            url: "https://raw.githubusercontent.com/oceanprotocol/c2d-examples/main/branin_and_gpr/branin.arff",
+            // url:
             method: "GET",
         },
     ],
@@ -41,7 +43,9 @@ const ALGORITHM_ASSET_URL = {
     files: [
         {
             type: "url",
-            url: "https://raw.githubusercontent.com/oceanprotocol/test-algorithm/master/javascript/algo.js",
+            // url: "https://raw.githubusercontent.com/oceanprotocol/test-algorithm/master/javascript/algo.js",
+            // url: "https://raw.githubusercontent.com/BRL-Living-Lab/brl-dex-react/main/test-algo.py",
+            url: "https://raw.githubusercontent.com/oceanprotocol/c2d-examples/main/branin_and_gpr/gpr.py",
             method: "GET",
         },
     ],
@@ -51,7 +55,7 @@ const DATASET_DDO = {
     "@context": ["https://w3id.org/did/v1"],
     id: "",
     version: "4.1.0",
-    chainId: 5,
+    chainId: oceanConfig.chainId,
     nftAddress: "0x0",
     metadata: {
         created: "2021-12-20T14:35:20Z",
@@ -71,7 +75,7 @@ const DATASET_DDO = {
             type: "compute",
             files: "",
             datatokenAddress: "0xa15024b732A8f2146423D14209eFd074e61964F3",
-            serviceEndpoint: "https://v4.provider.goerli.oceanprotocol.com/",
+            serviceEndpoint: "https://v4.provider.mumbai.oceanprotocol.com/",
             timeout: 3000,
             compute: {
                 publisherTrustedAlgorithmPublishers: [],
@@ -87,7 +91,7 @@ const ALGORITHM_DDO = {
     "@context": ["https://w3id.org/did/v1"],
     id: "",
     version: "4.1.0",
-    chainId: 5,
+    chainId: oceanConfig.chainId,
     nftAddress: "0x0",
     metadata: {
         created: "2021-12-20T14:35:20Z",
@@ -102,10 +106,10 @@ const ALGORITHM_DDO = {
         },
         algorithm: {
             container: {
-                entrypoint: "node $ALGO",
-                image: "node",
-                tag: "alpine:3.16",
-                checksum: "sha256:d7c1c5566f2eb09a6f16044174f285f3e0d0073a58bfd2f188c71a6decb5fc15",
+                entrypoint: "python $ALGO",
+                image: "oceanprotocol/algo_dockers",
+                tag: "python-branin",
+                checksum: "sha256:8221d20c1c16491d7d56b9657ea09082c0ee4a8ab1a6621fa720da58b09580e4",
             },
         },
     },
@@ -115,7 +119,7 @@ const ALGORITHM_DDO = {
             type: "access",
             files: "",
             datatokenAddress: "0xa15024b732A8f2146423D14209eFd074e61964F3",
-            serviceEndpoint: "https://v4.provider.goerli.oceanprotocol.com/",
+            serviceEndpoint: "https://v4.provider.mumbai.oceanprotocol.com/",
             timeout: 3000,
         },
     ],
@@ -158,14 +162,14 @@ const createAsset = async (name, symbol, owner, assetUrl, ddo, providerUrl) => {
 
     assetUrl.datatokenAddress = datatokenAddressAsset;
     assetUrl.nftAddress = ddo.nftAddress;
-    let providerResponse = await ProviderInstance.encrypt(assetUrl, providerUrl);
+    let providerResponse = await ProviderInstance.encrypt(assetUrl, oceanConfig.chainId, providerUrl);
     ddo.services[0].files = await providerResponse;
     ddo.services[0].datatokenAddress = datatokenAddressAsset;
     ddo.services[0].serviceEndpoint = providerUrl;
 
     ddo.nftAddress = web3.utils.toChecksumAddress(nftAddress);
     ddo.id = generateDid(nftAddress, chain);
-    providerResponse = await ProviderInstance.encrypt(ddo, providerUrl);
+    providerResponse = await ProviderInstance.encrypt(ddo, oceanConfig.chainId, providerUrl);
     const encryptedResponse = await providerResponse;
     const validateResult = await aquarius.validate(ddo);
 
@@ -344,10 +348,10 @@ const run = async () => {
     computeEnvs = await ProviderInstance.getComputeEnvironments(oceanConfig.providerUri);
     console.log(computeEnvs);
 
-    const computeEnv = computeEnvs.find((ce) => ce.priceMin === 0);
+    const computeEnv = computeEnvs[oceanConfig.chainId.toString()].find((ce) => ce.priceMin === 0);
     console.log("Free compute environment = ", computeEnv);
 
-    const paidComputeEnv = computeEnvs.find((ce) => ce.priceMin != 0);
+    const paidComputeEnv = computeEnvs[oceanConfig.chainId.toString()].find((ce) => ce.priceMin != 0);
     console.log("Paid compute environment = ", paidComputeEnv);
 
     const mytime = new Date();
@@ -469,7 +473,16 @@ const run = async () => {
         0
     );
 
+    const downloadURL2 = await ProviderInstance.getComputeResultUrl(
+        oceanConfig.providerUri,
+        web3,
+        consumerAccount,
+        computeJobId,
+        1
+    );
+
     console.log(`Compute results URL: ${downloadURL}`);
+    console.log(`Compute results URL: ${downloadURL2}`);
 
     console.log(await datatoken.balance(resolvedDatasetDdo.datatokens[0].address, consumerAccount));
     console.log(await datatoken.balance(resolvedAlgorithmDdo.datatokens[0].address, consumerAccount));
